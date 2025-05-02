@@ -1,0 +1,204 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Super Bowl Wins, Losses, and Appearances</title>
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 40px;
+    }
+    .bar {
+      fill: steelblue;
+    }
+    .bar:hover {
+      fill: orange;
+    }
+    .axis text {
+      font-size: 12px;
+    }
+    .tooltip {
+      position: absolute;
+      text-align: left;
+      padding: 8px;
+      font-size: 12px;
+      background: lightsteelblue;
+      border: 1px solid #333;
+      border-radius: 4px;
+      pointer-events: none;
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Super Bowl Team Performance</h1>
+  <h2>Wins and Losses</h2>
+  <div id="bar"></div>
+
+  <h2>Wins and losses of each team</h2>
+  <div id="pie"></div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    // Super Bowl data
+    var teams = [
+      {team: "49ers", wins: 5, losses: 2},
+      {team: "Chiefs", wins: 1, losses: 1},
+      {team: "Patriots", wins: 6, losses: 5},
+      {team: "Eagles", wins: 1, losses: 2},
+      {team: "Broncos", wins: 3, losses: 5},
+      {team: "Seahawks", wins: 1, losses: 2},
+      {team: "Ravens", wins: 2, losses: 0},
+      {team: "Giants", wins: 4, losses: 1},
+      {team: "Packers", wins: 4, losses: 1},
+      {team: "Steelers", wins: 6, losses: 2},
+      {team: "Colts", wins: 2, losses: 2},
+      {team: "Cardinals", wins: 0, losses: 1},
+      {team: "Rams", wins: 1, losses: 3},
+      {team: "Buccaneers", wins: 1, losses: 0},
+      {team: "Panthers", wins: 0, losses: 2},
+      {team: "Bears", wins: 1, losses: 1},
+      {team: "Falcons", wins: 0, losses: 2},
+      {team: "Raiders", wins: 2, losses: 2},
+      {team: "Redskins", wins: 3, losses: 2},
+      {team: "Cowboys", wins: 5, losses: 3},
+      {team: "Dolphins", wins: 2, losses: 3},
+      {team: "Vikings", wins: 0, losses: 4},
+      {team: "Bills", wins: 0, losses: 4},
+      {team: "Jets", wins: 1, losses: 0},
+      {team: "Saints", wins: 1, losses: 0},
+      {team: "Bengals", wins: 0, losses: 2},
+      {team: "Chargers", wins: 0, losses: 1},
+      {team: "Titans", wins: 0, losses: 1}
+    ];
+
+    var margin = { top: 20, right: 20, bottom: 100, left: 60 },
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var x = d3.scale.ordinal()
+              .rangeRoundBands([0, width], 0.2)
+              .domain(teams.map(d => d.team));
+
+    var y = d3.scale.linear()
+              .range([height, 0])
+              .domain([0, d3.max(teams, d => Math.max(d.wins, d.losses)) + 1]);
+
+    var xAxis = d3.svg.axis().scale(x).orient("bottom").tickFormat(d => d);
+    var yAxis = d3.svg.axis().scale(y).orient("left");
+
+    var svg = d3.select("#bar").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    svg.append("g")
+       .attr("class", "x axis")
+       .attr("transform", "translate(0," + height + ")")
+       .call(xAxis)
+       .selectAll("text")
+         .style("text-anchor", "end")
+         .attr("dx", "-0.8em")
+         .attr("dy", "0.15em")
+         .attr("transform", "rotate(-65)");
+
+    svg.append("g")
+       .attr("class", "y axis")
+       .call(yAxis)
+     .append("text")
+       .attr("transform", "rotate(-90)")
+       .attr("y", -50)
+       .attr("dy", ".71em")
+       .style("text-anchor", "end")
+       .text("Count");
+
+    var tooltip = d3.select("#tooltip");
+
+    svg.selectAll(".bar.wins")
+      .data(teams)
+      .enter().append("rect")
+      .attr("class", "bar wins")
+      .attr("x", d => x(d.team))
+      .attr("width", x.rangeBand() / 2)
+      .attr("y", d => y(d.wins))
+      .attr("height", d => height - y(d.wins))
+      .style("fill", "green")
+      .on("mouseover", function(d) {
+        tooltip.transition().duration(200).style("opacity", 0.9);
+        tooltip.html(`<strong>${d.team}</strong><br/>Wins: ${d.wins}`)
+               .style("left", (d3.event.pageX + 10) + "px")
+               .style("top", (d3.event.pageY - 30) + "px");
+      })
+      .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+
+    svg.selectAll(".bar.losses")
+      .data(teams)
+      .enter().append("rect")
+      .attr("class", "bar losses")
+      .attr("x", d => x(d.team) + x.rangeBand() / 2)
+      .attr("width", x.rangeBand() / 2)
+      .attr("y", d => y(d.losses))
+      .attr("height", d => height - y(d.losses))
+      .style("fill", "red")
+      .on("mouseover", function(d) {
+        tooltip.transition().duration(200).style("opacity", 0.9);
+        tooltip.html(`<strong>${d.team}</strong><br/>Losses: ${d.losses}`)
+               .style("left", (d3.event.pageX + 10) + "px")
+               .style("top", (d3.event.pageY - 30) + "px");
+      })
+      .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+
+    // PIE CHART
+    var pieWidth = 500, pieHeight = 500, radius = Math.min(pieWidth, pieHeight) / 2;
+    var pieColor = d3.scale.category20();
+
+    var arc = d3.svg.arc().outerRadius(radius - 10).innerRadius(0);
+    var pie = d3.layout.pie().sort(null).value(d => d.value);
+
+    var pieSvg = d3.select("#pie").append("svg")
+      .attr("width", pieWidth)
+      .attr("height", pieHeight)
+      .append("g")
+      .attr("transform", "translate(" + pieWidth / 2 + "," + pieHeight / 2 + ")");
+
+    var pieData = teams.map(d => ({
+      label: d.team,
+      wins: d.wins,
+      losses: d.losses,
+      value: d.wins + d.losses
+    }));
+
+    var arcGroup = pieSvg.selectAll(".arc")
+      .data(pie(pieData))
+      .enter().append("g")
+      .attr("class", "arc");
+
+    arcGroup.append("path")
+      .attr("d", arc)
+      .style("fill", d => pieColor(d.data.label))
+      .on("mouseover", function(d) {
+        tooltip.transition().duration(200).style("opacity", 0.9);
+        tooltip.html(
+          `<strong>${d.data.label}</strong><br/>
+           Wins: ${d.data.wins}<br/>
+           Losses: ${d.data.losses}<br/>
+           Appearances: ${d.data.value}`
+        )
+        .style("left", (d3.event.pageX + 10) + "px")
+        .style("top", (d3.event.pageY - 40) + "px");
+      })
+      .on("mouseout", function() {
+        tooltip.transition().duration(300).style("opacity", 0);
+      });
+
+    arcGroup.append("text")
+      .attr("transform", d => "translate(" + arc.centroid(d) + ")")
+      .attr("dy", ".35em")
+      .style("text-anchor", "middle")
+      .style("font-size", "10px")
+      .text(d => d.data.label);
+  </script>
+</body>
+</html>
