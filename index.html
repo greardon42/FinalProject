@@ -1,26 +1,16 @@
-\<html lang="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Super Bowl Wins, Losses, and Appearances</title>
+  <title>Super Bowl Visualization</title>
   <script src="https://d3js.org/d3.v3.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
       margin: 40px;
     }
-
-    .bar {
-      fill: steelblue;
-    }
-
-    .bar:hover {
-      fill: orange;
-    }
-
-    .axis text {
-      font-size: 12px;
-    }
-
+    .bar.wins { fill: green; }
+    .bar.losses { fill: red; }
+    .bar:hover { opacity: 0.7; }
     .tooltip {
       position: absolute;
       text-align: left;
@@ -32,26 +22,42 @@
       pointer-events: none;
       opacity: 0;
     }
+    .line {
+      fill: none;
+      stroke-width: 2;
+    }
+    .line.winner { stroke: green; }
+    .line.loser { stroke: red; }
+    .arc:hover {
+      transform: scale(1.05);
+      transition: transform 0.2s;
+    }
+    .axis-label {
+      font-size: 14px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h1>Super Bowl Team Performance</h1>
 
-  <h2>Wins and Losses</h2>
+  <h2>Wins and Losses Bar Chart</h2>
   <div id="bar-chart"></div>
 
-  <h2>Total Appearances with Hover Details</h2>
+  <h2>Total Appearances Pie Chart</h2>
   <div id="pie-chart"></div>
+
+  <h2>Points Scored by Winners and Losers Over the Years</h2>
+  <div id="line-chart"></div>
 
   <div class="tooltip" id="tooltip"></div>
 
   <script>
-    // Data for teams: wins, losses, and team colors
     const teams = [
       { team: "49ers", wins: 5, losses: 2, color: "#AA0000" },
-      { team: "Chiefs", wins: 1, losses: 1, color: "#E31837" },
+      { team: "Chiefs", wins: 3, losses: 2, color: "#E31837" },
       { team: "Patriots", wins: 6, losses: 5, color: "#002244" },
-      { team: "Eagles", wins: 1, losses: 2, color: "#004C54" },
+      { team: "Eagles", wins: 1, losses: 3, color: "#004C54" },
       { team: "Broncos", wins: 3, losses: 5, color: "#FB4F14" },
       { team: "Seahawks", wins: 1, losses: 2, color: "#002244" },
       { team: "Ravens", wins: 2, losses: 0, color: "#241773" },
@@ -61,11 +67,11 @@
       { team: "Colts", wins: 2, losses: 2, color: "#002C5F" },
       { team: "Cardinals", wins: 0, losses: 1, color: "#97233F" },
       { team: "Rams", wins: 1, losses: 3, color: "#003594" },
-      { team: "Buccaneers", wins: 1, losses: 0, color: "#D50A0A" },
+      { team: "Buccaneers", wins: 2, losses: 0, color: "#D50A0A" },
       { team: "Panthers", wins: 0, losses: 2, color: "#0085CA" },
       { team: "Bears", wins: 1, losses: 1, color: "#0B162A" },
       { team: "Falcons", wins: 0, losses: 2, color: "#A71930" },
-      { team: "Raiders", wins: 2, losses: 2, color: "#000000" },
+      { team: "Raiders", wins: 3, losses: 2, color: "#000000" },
       { team: "Redskins", wins: 3, losses: 2, color: "#773141" },
       { team: "Cowboys", wins: 5, losses: 3, color: "#041E42" },
       { team: "Dolphins", wins: 2, losses: 3, color: "#008E97" },
@@ -73,142 +79,215 @@
       { team: "Bills", wins: 0, losses: 4, color: "#00338D" },
       { team: "Jets", wins: 1, losses: 0, color: "#125740" },
       { team: "Saints", wins: 1, losses: 0, color: "#D3BC8D" },
-      { team: "Bengals", wins: 0, losses: 2, color: "#FB4F14" },
+      { team: "Bengals", wins: 0, losses: 3, color: "#FB4F14" },
       { team: "Chargers", wins: 0, losses: 1, color: "#0080C6" },
       { team: "Titans", wins: 0, losses: 1, color: "#4B92DB" }
     ];
 
-    // Tooltip setup
+    const lineChartData = [
+      { year: 1990, winnerPts: 55, loserPts: 10 },
+      { year: 1991, winnerPts: 20, loserPts: 19 },
+      { year: 1992, winnerPts: 37, loserPts: 24 },
+      { year: 1993, winnerPts: 52, loserPts: 17 },
+      { year: 1994, winnerPts: 30, loserPts: 13 },
+      { year: 1995, winnerPts: 49, loserPts: 26 },
+      { year: 1996, winnerPts: 27, loserPts: 17 },
+      { year: 1997, winnerPts: 35, loserPts: 21 },
+      { year: 1998, winnerPts: 31, loserPts: 24 },
+      { year: 1999, winnerPts: 34, loserPts: 19 },
+      { year: 2000, winnerPts: 23, loserPts: 16 },
+      { year: 2001, winnerPts: 34, loserPts: 7 },
+      { year: 2002, winnerPts: 20, loserPts: 17 },
+      { year: 2003, winnerPts: 48, loserPts: 21 },
+      { year: 2004, winnerPts: 32, loserPts: 29 },
+      { year: 2005, winnerPts: 24, loserPts: 21 },
+      { year: 2006, winnerPts: 21, loserPts: 10 },
+      { year: 2007, winnerPts: 29, loserPts: 17 },
+      { year: 2008, winnerPts: 17, loserPts: 14 },
+      { year: 2009, winnerPts: 27, loserPts: 23 },
+      { year: 2010, winnerPts: 31, loserPts: 17 },
+      { year: 2011, winnerPts: 31, loserPts: 25 },
+      { year: 2012, winnerPts: 21, loserPts: 17 },
+      { year: 2013, winnerPts: 34, loserPts: 31 },
+      { year: 2014, winnerPts: 43, loserPts: 8 },
+      { year: 2015, winnerPts: 28, loserPts: 24 },
+      { year: 2016, winnerPts: 24, loserPts: 10 },
+      { year: 2017, winnerPts: 34, loserPts: 28 },
+      { year: 2018, winnerPts: 41, loserPts: 33 },
+      { year: 2019, winnerPts: 13, loserPts: 3 },
+      { year: 2020, winnerPts: 31, loserPts: 20 }
+    ];
+
     const tooltip = d3.select("#tooltip");
 
-    // BAR CHART SETUP
-    const margin = { top: 20, right: 20, bottom: 100, left: 60 };
-    const width = 960 - margin.left - margin.right;
-    const height = 500 - margin.top - margin.bottom;
+    // --- Bar Chart ---
+    const barWidth = 1000, barHeight = 450;
+    const svgBar = d3.select("#bar-chart").append("svg")
+      .attr("width", barWidth)
+      .attr("height", barHeight + 50);
 
     const x = d3.scale.ordinal()
-                .rangeRoundBands([0, width], 0.2)
-                .domain(teams.map(d => d.team));
+      .rangeRoundBands([60, barWidth - 20], 0.1)
+      .domain(teams.map(d => d.team));
 
     const y = d3.scale.linear()
-                .range([height, 0])
-                .domain([0, d3.max(teams, d => Math.max(d.wins, d.losses)) + 1]);
+      .range([barHeight - 50, 0])
+      .domain([0, d3.max(teams, d => Math.max(d.wins, d.losses)) + 1]);
 
-    const xAxis = d3.svg.axis().scale(x).orient("bottom");
-    const yAxis = d3.svg.axis().scale(y).orient("left");
-
-    const svg = d3.select("#bar-chart").append("svg")
-                  .attr("width", width + margin.left + margin.right)
-                  .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                  .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Create x-axis and y-axis
-    svg.append("g")
-       .attr("class", "x axis")
-       .attr("transform", `translate(0,${height})`)
-       .call(xAxis)
-       .selectAll("text")
-         .style("text-anchor", "end")
-         .attr("dx", "-0.8em")
-         .attr("dy", "0.15em")
-         .attr("transform", "rotate(-65)");
-
-    svg.append("g")
-       .attr("class", "y axis")
-       .call(yAxis)
-     .append("text")
-       .attr("transform", "rotate(-90)")
-       .attr("y", -50)
-       .attr("dy", ".71em")
-       .style("text-anchor", "end")
-       .text("Count");
-
-    // Add bars for Wins and Losses
-    svg.selectAll(".bar.wins")
+    svgBar.selectAll(".bar.wins")
       .data(teams)
       .enter().append("rect")
       .attr("class", "bar wins")
       .attr("x", d => x(d.team))
       .attr("width", x.rangeBand() / 2)
       .attr("y", d => y(d.wins))
-      .attr("height", d => height - y(d.wins))
-      .style("fill", "green")
+      .attr("height", d => barHeight - 50 - y(d.wins))
       .on("mouseover", d => {
-        tooltip.transition().duration(200).style("opacity", 0.9);
-        tooltip.html(`<strong>${d.team}</strong><br/>Wins: ${d.wins}`)
-               .style("left", `${d3.event.pageX + 10}px`)
-               .style("top", `${d3.event.pageY - 30}px`);
+        tooltip.style("opacity", 1).html(`${d.team}<br>Wins: ${d.wins}`);
       })
-      .on("mouseout", () => {
-        tooltip.transition().duration(500).style("opacity", 0);
-      });
+      .on("mousemove", () => tooltip.style("left", (d3.event.pageX + 10) + "px")
+        .style("top", (d3.event.pageY - 28) + "px"))
+      .on("mouseout", () => tooltip.style("opacity", 0));
 
-    svg.selectAll(".bar.losses")
+    svgBar.selectAll(".bar.losses")
       .data(teams)
       .enter().append("rect")
       .attr("class", "bar losses")
       .attr("x", d => x(d.team) + x.rangeBand() / 2)
       .attr("width", x.rangeBand() / 2)
       .attr("y", d => y(d.losses))
-      .attr("height", d => height - y(d.losses))
-      .style("fill", "red")
+      .attr("height", d => barHeight - 50 - y(d.losses))
       .on("mouseover", d => {
-        tooltip.transition().duration(200).style("opacity", 0.9);
-        tooltip.html(`<strong>${d.team}</strong><br/>Losses: ${d.losses}`)
-               .style("left", `${d3.event.pageX + 10}px`)
-               .style("top", `${d3.event.pageY - 30}px`);
+        tooltip.style("opacity", 1).html(`${d.team}<br>Losses: ${d.losses}`);
       })
-      .on("mouseout", () => {
-        tooltip.transition().duration(500).style("opacity", 0);
+      .on("mousemove", () => tooltip.style("left", (d3.event.pageX + 10) + "px")
+        .style("top", (d3.event.pageY - 28) + "px"))
+      .on("mouseout", () => tooltip.style("opacity", 0));
+
+    svgBar.append("g")
+      .attr("transform", `translate(0,${barHeight - 50})`)
+      .call(d3.svg.axis().scale(x).orient("bottom"))
+      .selectAll("text")
+      .style("text-anchor", "end")
+      .attr("transform", "rotate(-45)")
+      .attr("dx", "-0.8em")
+      .attr("dy", "-0.15em");
+
+    svgBar.append("g")
+      .attr("transform", `translate(60,0)`)
+      .call(d3.svg.axis().scale(y).orient("left"));
+
+    svgBar.append("text")
+      .attr("x", barWidth / 2)
+      .attr("y", barHeight)
+      .attr("text-anchor", "middle")
+      .attr("class", "axis-label")
+      .text("Team");
+
+    svgBar.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 15)
+      .attr("x", -barHeight / 2 + 25)
+      .attr("text-anchor", "middle")
+      .attr("class", "axis-label")
+      .text("Super Bowl Wins / Losses");
+
+    // --- Pie Chart ---
+    const pieWidth = 500, pieHeight = 400, radius = Math.min(pieWidth, pieHeight) / 2;
+    const arc = d3.svg.arc().outerRadius(radius - 10).innerRadius(0);
+    const arcHover = d3.svg.arc().outerRadius(radius).innerRadius(0);
+    const pie = d3.layout.pie().value(d => d.wins + d.losses);
+
+    const svgPie = d3.select("#pie-chart").append("svg")
+      .attr("width", pieWidth)
+      .attr("height", pieHeight)
+      .append("g")
+      .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
+
+    const g = svgPie.selectAll(".arc")
+      .data(pie(teams))
+      .enter().append("g")
+      .attr("class", "arc");
+
+    g.append("path")
+      .attr("d", arc)
+      .attr("fill", d => d.data.color)
+      .on("mouseover", function(d) {
+        d3.select(this).transition().duration(200).attr("d", arcHover);
+        tooltip.style("opacity", 1).html(`${d.data.team}<br>Appearances: ${d.data.wins + d.data.losses}`);
+      })
+      .on("mousemove", () => tooltip.style("left", (d3.event.pageX + 10) + "px")
+        .style("top", (d3.event.pageY - 28) + "px"))
+      .on("mouseout", function() {
+        d3.select(this).transition().duration(200).attr("d", arc);
+        tooltip.style("opacity", 0);
       });
 
-    // PIE CHART SETUP
-    const pieWidth = 500, pieHeight = 500, radius = Math.min(pieWidth, pieHeight) / 2;
-    const arc = d3.svg.arc().outerRadius(radius - 10).innerRadius(0);
-    const pie = d3.layout.pie().sort(null).value(d => d.wins + d.losses);
+    g.append("text")
+      .attr("transform", d => `translate(${arc.centroid(d)})`)
+      .attr("dy", ".35em")
+      .style("text-anchor", "middle")
+      .style("font-size", "10px")
+      .text(d => d.data.team);
 
-    const pieSvg = d3.select("#pie-chart").append("svg")
-                     .attr("width", pieWidth)
-                     .attr("height", pieHeight)
-                   .append("g")
-                     .attr("transform", `translate(${pieWidth / 2},${pieHeight / 2})`);
+    // --- Line Chart ---
+    const marginLine = { top: 20, right: 20, bottom: 50, left: 60 },
+          widthLine = 900 - marginLine.left - marginLine.right,
+          heightLine = 400 - marginLine.top - marginLine.bottom;
 
-    const arcs = pieSvg.selectAll(".arc")
-                       .data(pie(teams))
-                       .enter().append("g")
-                       .attr("class", "arc");
+    const svgLine = d3.select("#line-chart").append("svg")
+      .attr("width", widthLine + marginLine.left + marginLine.right)
+      .attr("height", heightLine + marginLine.top + marginLine.bottom)
+      .append("g")
+      .attr("transform", `translate(${marginLine.left},${marginLine.top})`);
 
-    arcs.append("path")
-        .attr("d", arc)
-        .style("fill", d => d.data.color)
-        .on("mouseover", function(d) {
-          d3.select(this)
-            .transition().duration(200)
-            .style("opacity", 0.7)
-            .attr("transform", "scale(1.05)");
+    const xLine = d3.scale.linear()
+      .range([0, widthLine])
+      .domain(d3.extent(lineChartData, d => d.year));
 
-          tooltip.transition().duration(200).style("opacity", 1);
-          tooltip.html(`<strong>${d.data.team}</strong><br/>Appearances: ${d.data.wins + d.data.losses}<br/>Wins: ${d.data.wins}<br/>Losses: ${d.data.losses}`)
-                 .style("left", `${d3.event.pageX + 10}px`)
-                 .style("top", `${d3.event.pageY - 28}px`);
-        })
-        .on("mouseout", function() {
-          d3.select(this)
-            .transition().duration(200)
-            .style("opacity", 1)
-            .attr("transform", "scale(1)");
+    const yLine = d3.scale.linear()
+      .range([heightLine, 0])
+      .domain([0, d3.max(lineChartData, d => Math.max(d.winnerPts, d.loserPts))]);
 
-          tooltip.transition().duration(500).style("opacity", 0);
-        });
+    const lineWinner = d3.svg.line()
+      .x(d => xLine(d.year))
+      .y(d => yLine(d.winnerPts));
 
-    arcs.append("text")
-        .attr("transform", d => `translate(${arc.centroid(d)})`)
-        .attr("dy", ".35em")
-        .style("text-anchor", "middle")
-        .style("font-size", "10px")
-        .text(d => d.data.team);
+    const lineLoser = d3.svg.line()
+      .x(d => xLine(d.year))
+      .y(d => yLine(d.loserPts));
+
+    svgLine.append("path")
+      .datum(lineChartData)
+      .attr("class", "line winner")
+      .attr("d", lineWinner);
+
+    svgLine.append("path")
+      .datum(lineChartData)
+      .attr("class", "line loser")
+      .attr("d", lineLoser);
+
+    svgLine.append("g")
+      .attr("transform", `translate(0,${heightLine})`)
+      .call(d3.svg.axis().scale(xLine).orient("bottom").tickFormat(d3.format("d")));
+
+    svgLine.append("g")
+      .call(d3.svg.axis().scale(yLine).orient("left"));
+
+    svgLine.append("text")
+      .attr("x", widthLine / 2)
+      .attr("y", heightLine + 40)
+      .attr("text-anchor", "middle")
+      .attr("class", "axis-label")
+      .text("Year");
+
+    svgLine.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", -40)
+      .attr("x", -heightLine / 2)
+      .attr("text-anchor", "middle")
+      .attr("class", "axis-label")
+      .text("Points Scored");
   </script>
 </body>
 </html>
-
